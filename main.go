@@ -22,7 +22,7 @@ type Chapter struct {
 func main() {
 	fmt.Println("Starting Program")
 	rand.Seed(time.Now().UnixNano())
-	url := "https://www.lightnovelpub.com/novel/kill-the-sun-05122222/chapters"
+	url := "https://www.lightnovelpub.com/novel/atticuss-odyssey-reincarnated-into-a-playground/chapters"
 	domain := strings.SplitAfter(url,".com")[0]
 	bookName := strings.Split(strings.SplitAfter(strings.SplitAfter(url,"novel/")[1],"/")[0],"/")[0]
 	fmt.Println("filename: " + bookName)
@@ -90,16 +90,41 @@ func callChapter(allChapters []Chapter, client *http.Client, bookName string) {
 		pageReq.Header.Set("Connection", "keep-alive")
 		pageReq.Header.Set("Referer", "https://www.google.com")
 
-		time.Sleep(time.Duration(rand.Intn(3000)+1000) * time.Millisecond)
+		time.Sleep(time.Duration(rand.Intn(2000)+1000) * time.Millisecond)
 
 		pageResp, err2 := client.Do(pageReq)
 		if err2 != nil {
-			log.Panic(err2)
-			return
+			//log.Panic(err2)
+			//return
+			
 		}
 		// pageResp.Body.Close()
 
 		fmt.Println(pageResp.StatusCode)
+
+		for pageResp.StatusCode != 200 || err2 != nil{
+			pageReq2, err5 := http.NewRequest("GET", allChapters[index].Link, nil)
+		if err5 != nil {
+			log.Panic(err5)
+			return
+		}
+		pageReq2.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
+		pageReq2.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+		pageReq2.Header.Set("Accept-Language", "en-US,en;q=0.5")
+		pageReq2.Header.Set("Connection", "keep-alive")
+		pageReq2.Header.Set("Referer", "https://www.google.com")
+
+		time.Sleep(time.Duration(rand.Intn(5000)+10000) * time.Millisecond)
+
+		pageResp2, err4 := client.Do(pageReq2)
+		if err4 != nil {
+			//log.Panic(err4)
+			//return
+		}
+
+
+		pageResp = pageResp2
+		}
 		
 
 		tempDoc, err3 := html.Parse(pageResp.Body)
@@ -182,6 +207,8 @@ func callPages(doc *html.Node, domain string, chapterPages *[]*html.Node, client
 		pageReq.Header.Set("Connection", "keep-alive")
 		pageReq.Header.Set("Referer", "https://www.google.com")
 
+		time.Sleep(time.Duration(rand.Intn(2000)+1000) * time.Millisecond)
+
 		pageResp, err2 := client.Do(pageReq)
 		if err2 != nil {
 			log.Panic(err2)
@@ -228,8 +255,9 @@ func getTotalPages(doc *html.Node, domain string) []string {
 						lastPage := lists.FirstChild
 						for _, attribute := range lastPage.Attr {
 							if attribute.Key == "href" {
-								halfURL = attribute.Val[:len(attribute.Val)-1]
-								tempNumber, _ := strconv.Atoi(attribute.Val[len(attribute.Val)-1:])
+								split := strings.SplitAfter(attribute.Val,"=")
+								halfURL = split[0]
+								tempNumber, _ := strconv.Atoi(split[1])
 								lastPageNumber = tempNumber
 							}
 							//fmt.Println(lastPageNumber)
