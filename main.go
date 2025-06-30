@@ -24,8 +24,12 @@ type Chapter struct {
 
 func main() {
 	fmt.Println("Starting Program")
+
+	if len(os.Args) < 2 {
+		log.Fatal("Not enough arguments given")
+	}
 	rand.Seed(time.Now().UnixNano())
-	url := "https://www.royalroad.com/fiction/119140/rift-runner-returns-home-singularity-mage?utm_source=home&utm_medium=rising-stars"
+	url := os.Args[1]
 	domain := strings.SplitAfter(url, ".com")[0]
 	bookName := strings.SplitAfter(url, "/")[5]
 	fmt.Println("filename: " + bookName)
@@ -35,8 +39,9 @@ func main() {
 
 	doc := requestPageHTML(url, client)
 
-	callPages(doc, domain, &allChapters)
+	getAllChaptersInfo(doc, domain, &allChapters)
 
+	fmt.Println("All chapters:")
 	printStuff(allChapters)
 
 	callChapter(allChapters, client, bookName)
@@ -53,6 +58,7 @@ func requestPageHTML(url string, client *http.Client) *html.Node {
 		if err != nil {
 			log.Panic(err)
 		}
+		fmt.Println("Making Request to ", url)
 
 		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
 		req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
@@ -90,7 +96,7 @@ func requestPageHTML(url string, client *http.Client) *html.Node {
 }
 
 // Gets us all the pages that have 100 chapters each
-func callPages(doc *html.Node, domain string, allChapters *[]Chapter) {
+func getAllChaptersInfo(doc *html.Node, domain string, allChapters *[]Chapter) {
 	for item := range doc.Descendants() {
 		if item.Type == html.TextNode {
 			if len(item.Data) > 27 {
@@ -125,7 +131,7 @@ func callPages(doc *html.Node, domain string, allChapters *[]Chapter) {
 
 }
 
-// Gets chapter's content
+// Goes to each chapter and calls its content
 func callChapter(allChapters []Chapter, client *http.Client, bookName string) {
 	fullHTML := ""
 
@@ -146,7 +152,8 @@ func callChapter(allChapters []Chapter, client *http.Client, bookName string) {
 
 				node.PrevSibling = nil
 				node.NextSibling = nil
-				fmt.Println(node)
+				fmt.Println("Saving content: ", node)
+				fmt.Println("-------------------")
 				chapContent = node
 				break
 			}
