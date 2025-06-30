@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -26,16 +25,15 @@ type Chapter struct {
 func main() {
 	fmt.Println("Starting Program")
 	rand.Seed(time.Now().UnixNano())
-	url := "https://www.royalroad.com/fiction/63759/super-supportive"
+	url := "https://www.royalroad.com/fiction/119140/rift-runner-returns-home-singularity-mage?utm_source=home&utm_medium=rising-stars"
 	domain := strings.SplitAfter(url, ".com")[0]
 	bookName := strings.SplitAfter(url, "/")[5]
 	fmt.Println("filename: " + bookName)
 
 	client := &http.Client{}
+	allChapters := []Chapter{}
 
 	doc := requestPageHTML(url, client)
-
-	allChapters := []Chapter{}
 
 	callPages(doc, domain, &allChapters)
 
@@ -45,6 +43,7 @@ func main() {
 
 }
 
+// Send a get request to a url and returns the a note tree
 func requestPageHTML(url string, client *http.Client) *html.Node {
 	var response http.Response
 	tryCount := 0
@@ -102,7 +101,7 @@ func callPages(doc *html.Node, domain string, allChapters *[]Chapter) {
 					jsons := re.FindStringSubmatch(item.Data)
 
 					if len(jsons) < 2 {
-						log.Fatal("json chapters not found")
+						log.Fatal("err")
 					}
 
 					jsonArray := jsons[1]
@@ -126,51 +125,7 @@ func callPages(doc *html.Node, domain string, allChapters *[]Chapter) {
 
 }
 
-func getTotalPages(doc *html.Node, domain string) []string {
-	halfURL := ""
-	var lastPageNumber int
-	for node := range doc.Descendants() {
-		if node.Type != html.ElementNode || node.Data != "ul" {
-			continue
-		}
-		for _, ele := range node.Attr {
-			if ele.Key != "class" {
-				continue
-			}
-			if ele.Val == "pagination" {
-				//inside of page navigation list
-				for lists := range node.Descendants() {
-					//fmt.Println(lists)
-					if lists.Type != html.ElementNode || lists.Data != "li" {
-						continue
-					}
-					//mt.Println(lists)
-					if lists.NextSibling == nil {
-						//fmt.Println(lists)
-						lastPage := lists.FirstChild
-						for _, attribute := range lastPage.Attr {
-							if attribute.Key == "href" {
-								split := strings.SplitAfter(attribute.Val, "=")
-								halfURL = split[0]
-								tempNumber, _ := strconv.Atoi(split[1])
-								lastPageNumber = tempNumber
-							}
-							//fmt.Println(lastPageNumber)
-						}
-					}
-				}
-			}
-		}
-	}
-
-	pageURLs := []string{}
-	for index := 2; index <= lastPageNumber; index++ {
-		pageURLs = append(pageURLs, domain+halfURL+strconv.Itoa(index))
-	}
-
-	return pageURLs
-}
-
+// Gets chapter's content
 func callChapter(allChapters []Chapter, client *http.Client, bookName string) {
 	fullHTML := ""
 
