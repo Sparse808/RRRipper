@@ -1,5 +1,5 @@
 # Royal Road Ripper
-An eady tool for download rolay road novels as html files.
+An easy tool for download royal road novels as html files.
 
 ## Requirements
 You must have Go installed.
